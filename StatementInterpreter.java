@@ -49,6 +49,11 @@ public class StatementInterpreter {
 			schema_manager.createRelation(relation_name, schema);
 
 		} else if (tokens[0].equals("DROP") && tokens[1].equals("TABLE")) { // to delete a table
+			scan_pt += 2;
+			String relation_name = tokens[2];
+			scan_pt += 1;
+
+			schema_manager.deleteRelation(relation_name);
 			
 		} else if (tokens[0].equals("INSERT")) { // to insert value to a table
 			
