@@ -12,6 +12,9 @@ public class ScriptInterpreter {
 		Disk disk = new Disk();
 		SchemaManager schema_manager = new SchemaManager(mem, disk);
 		
+		disk.resetDiskIOs();
+    	disk.resetDiskTimer();
+
 		try {
 			String fileName = args[0];
 			File file = new File(fileName);
@@ -19,12 +22,13 @@ public class ScriptInterpreter {
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
 			String line;
 			while ((line = bufferedReader.readLine()) != null) {
-				System.out.println(line);
+				// System.out.println(line);
 				StatementInterpreter.executeStmt(line, mem, disk, schema_manager);
 			}
 			fileReader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println(schema_manager);
 	}
 }
