@@ -34,7 +34,7 @@ public class StatementInterpreter {
 				} else if (tmp_field_type.equals("STR20")) {
 					field_types.add(FieldType.STR20);
 				} else {
-					System.out.println("unknown type");
+					assert false;
 				}
 				scan_pt += 2;
 			}
@@ -46,7 +46,7 @@ public class StatementInterpreter {
 			String relation_name = tokens[2];
 			scan_pt += 1;
 
-			// LogicalPlan.dropTable(relation_name, schema_manager);
+		 	//LogicalPlan.dropTable(relation_name, schema_manager);
 
 		} else if (tokens[0].equals("INSERT") && tokens[1].equals("INTO")) { // to insert value(s) to a table
 			scan_pt += 2;
@@ -78,16 +78,17 @@ public class StatementInterpreter {
 				for (int i = scan_pt; i < stop_pt; i++) {
 					tmp_value = tokens[i];
 					tmp_value = tmp_value.replace("(", "");
-					tmp_value = tmp_value.replace("(", "");
-					tmp_value = tmp_value.replace("(", "");
+					tmp_value = tmp_value.replace(")", "");
+					tmp_value = tmp_value.replace("\"", "");
+					tmp_value = tmp_value.replace(",", "");
 
 					field_values.add(tmp_value);
 					scan_pt++;
 				}
 
-				LogicalPlan.createTuple(relation_name, field_names, field_values, schema_manager);
+				LogicalPlan.insertTuple(relation_name, field_names, field_values, schema_manager, mem);
 
-			} else if (tokens.[scan_pt].equals("SELECT")) {
+			} else if (tokens[scan_pt].equals("SELECT")) {
 				System.out.println("undefined statement");
 			} else {
 				System.out.println("unknown statement");
@@ -98,12 +99,12 @@ public class StatementInterpreter {
 		} else if (tokens[0].equals("SELECT")) { // to display tuples
 			
 		} else {
-			System.out.println("unknown statement");
+			assert false;
 		}
 	}
 
 	// help find how many tokens to read
-	static private int findNextTokenContains(String[] tokens, int sc_pt, String substr) {
+	private static int findNextTokenContains(String[] tokens, int sc_pt, String substr) {
 		int i = sc_pt;
 		while (i < tokens.length) {
 			if (tokens[i].contains(substr)) {

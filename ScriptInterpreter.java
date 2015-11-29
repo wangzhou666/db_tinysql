@@ -29,6 +29,7 @@ public class ScriptInterpreter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.out.println(schema_manager);
+		System.out.println(schema_manager.getRelation("course"));
+		System.out.println(schema_manager.getRelation("course2"));
 	}
 }
