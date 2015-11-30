@@ -17,6 +17,40 @@ public class LogicalPlan {
 
 	}
 
+	public static void deleteTuples(String relation_name, String attribute_name, String attribute_value, 
+		SchemaManager schema_manager, MainMemory mem) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+		if (attribute_name == null) {	
+			relation.deleteBlocks(0);
+		} else {
+			Block mem_blk;
+			int num_relation_blocks = relation.getNumOfBlocks();
+			ArrayList<Tuple> tuples_in_block;
+			Field field_to_check;
+			boolean flag_delete;
+			for (int i = 0; i < num_relation_blocks; i++) {
+				relation.getBlock(i, 0);
+				mem_blk = mem.getBlock(0);
+				tuples_in_block = mem_blk.getTuples();
+				mem_blk.clear();
+				flag_delete = false;
+				for (Tuple t : tuples_in_block) {
+					field_to_check = t.getField(attribute_name);
+					if (!field_to_check.str.equals(attribute_value)) {
+						mem_blk.appendTuple(t);
+					} else {
+						flag_delete = true;
+					}
+				}
+				if (flag_delete) {
+					relation.setBlock(i, 0);
+				}
+			}
+		}
+
+	}
+
 	public static void insertTuple(String relation_name, ArrayList<String> field_names, ArrayList<String> field_values, 
 		SchemaManager schema_manager, MainMemory mem) {
 
@@ -62,4 +96,6 @@ public class LogicalPlan {
 		}				
 
 	}
+
+
 }

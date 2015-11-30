@@ -46,7 +46,7 @@ public class StatementInterpreter {
 			String relation_name = tokens[2];
 			scan_pt += 1;
 
-		 	//LogicalPlan.dropTable(relation_name, schema_manager);
+		 	LogicalPlan.dropTable(relation_name, schema_manager);
 
 		} else if (tokens[0].equals("INSERT") && tokens[1].equals("INTO")) { // to insert value(s) to a table
 			scan_pt += 2;
@@ -94,8 +94,20 @@ public class StatementInterpreter {
 				System.out.println("unknown statement");
 			}
 
-		} else if (tokens[0].equals("DELETE")) { // to delete value in a table
+		} else if (tokens[0].equals("DELETE") && tokens[1].equals("FROM")) { // to delete value in a table
 			
+			String relation_name = tokens[2];
+			String attribute_name = null;
+			String attribute_value = null;
+			if (tokens.length > 3) {
+				if (tokens[3].equals("WHERE")) {
+				attribute_name = tokens[4];
+				attribute_value = tokens[6].replace("\"","");
+				}
+			}
+
+			LogicalPlan.deleteTuples(relation_name, attribute_name, attribute_value, schema_manager, mem);
+
 		} else if (tokens[0].equals("SELECT")) { // to display tuples
 			
 		} else {
