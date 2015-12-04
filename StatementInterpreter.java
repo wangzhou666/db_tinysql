@@ -89,9 +89,15 @@ public class StatementInterpreter {
 				LogicalPlan.insertTuple(relation_name, field_names, field_values, schema_manager, mem);
 
 			} else if (tokens[scan_pt].equals("SELECT")) {
-				System.out.println("undefined statement");
+			
+				assert tokens[scan_pt+1].equals("*");
+				String from_relation_name = tokens[scan_pt+3];
+				LogicalPlan.insertTuples(relation_name, from_relation_name, schema_manager, mem);
+
+
 			} else {
 				System.out.println("unknown statement");
+				assert false;
 			}
 
 		} else if (tokens[0].equals("DELETE") && tokens[1].equals("FROM")) { // to delete value in a table
@@ -104,12 +110,94 @@ public class StatementInterpreter {
 				attribute_name = tokens[4];
 				attribute_value = tokens[6].replace("\"","");
 				}
-			}
-
+			} 
 			LogicalPlan.deleteTuples(relation_name, attribute_name, attribute_value, schema_manager, mem);
 
 		} else if (tokens[0].equals("SELECT")) { // to display tuples
 			
+			String[] reservedWords = new String[] {"FROM", "ORDER", "WHERE"};
+			int amount_select_tokens = findClauseLength(tokens, scan_pt, reservedWords);
+			scan_pt += amount_select_tokens;
+			int amount_from_tokens = findClauseLength(tokens, scan_pt, reservedWords);
+
+			boolean need_distinct;
+			if (tokens[1].equals("DISTINCT")) {
+				need_distinct = true;
+			} else {
+				need_distinct = false;
+			}
+
+			boolean need_projection;
+			if (tokens[scan_pt-1].equals("*")) {
+				need_projection = false;
+			} else {
+				need_projection = true;
+				int amount_attr_proj;
+				if (need_distinct) {
+					amount_attr_proj = amount_select_tokens - 2;
+				} else {
+					amount_attr_proj = amount_select_tokens - 1;
+				}
+				ArrayList<String> attr_proj_names = new ArrayList<String>();
+				for (int i =0; i < amount_attr_proj; i++) {
+					attr_proj_names.add(tokens[scan_pt-i-1].replace(",", ""));
+				}
+			}
+
+			ArrayList<String> from_table_names = new ArrayList<String>();
+			for (int i = 1; i < amount_from_tokens; i++) {
+				from_table_names.add(tokens[scan_pt+i].replace(",", ""));
+			}
+			scan_pt += amount_from_tokens;
+
+			boolean has_condition = false;
+			boolean need_order = false;
+			if (scan_pt == tokens.length) { // only select and from
+				// end reading tokens
+			} else if (tokens[scan_pt].equals("ORDER")) {
+				String order_attr_name = tokens[scan_pt+2];
+				need_order = true;
+			} else if (tokens[scan_pt].equals("WHERE")) {
+				has_condition = true;
+				int amount_where_tokens = findClauseLength(tokens, scan_pt, reservedWords);
+				String[] where_tokens = new String[amount_where_tokens];
+				System.arraycopy(tokens, scan_pt, where_tokens, 0, amount_where_tokens);
+				// do something
+				scan_pt += amount_where_tokens;
+				if (scan_pt == tokens.length) {
+				 	// end reading
+				} else if (tokens[scan_pt].equals("ORDER")) {
+					need_order = true;
+					String order_attr_name = tokens[scan_pt+2];
+				}
+			}
+
+			if (from_table_names.size() == 1) {
+				// no need to join
+				if (has_condition) {
+					
+				} else {
+					if (need_order) {
+						
+					} else {
+						if (need_distinct) {
+							
+						} else {
+							if (need_projection) {
+								
+							} else {
+								LogicalPlan.displayTable(from_table_names.get(0), schema_manager, mem);
+							}
+						}
+					}
+				}
+			} else {
+				// needs join
+
+			}  
+
+
+
 		} else {
 			assert false;
 		}
@@ -125,5 +213,26 @@ public class StatementInterpreter {
 			i++;
 		}
 		return i-sc_pt+1;
+	}
+
+	private static int findClauseLength(String[] tokens, int sc_pt, String[] reserved_words) {
+		int i = sc_pt;
+		boolean is_reserved_word;
+		while (i < tokens.length) {
+			i++;
+			if (i == tokens.length) {
+				break;
+			}
+			is_reserved_word = false;
+			for (String s : reserved_words) {
+				if (s.equals(tokens[i])) {
+					is_reserved_word = true;
+				}
+			}
+			if (is_reserved_word) {
+				break;
+			}
+		}
+		return i-sc_pt;
 	}
 }

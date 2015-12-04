@@ -93,7 +93,52 @@ public class LogicalPlan {
 				mem_blk.appendTuple(tuple);
 				relation.setBlock(num_relation_blocks - 1, 0);
 			}	
-		}				
+		}
+
+	}
+
+	public static void insertTuples(String relation_name, String from_relation_name, 
+		SchemaManager schema_manager, MainMemory mem) {
+
+		Relation to_relation = schema_manager.getRelation(relation_name);
+		Relation from_relation = schema_manager.getRelation(from_relation_name);
+		
+		int num_blocks = from_relation.getNumOfBlocks();
+		int num_blocks_copied = 0;
+		int num_blocks_coping;
+		
+		while (num_blocks_copied < num_blocks) {
+			num_blocks_coping = Math.min(num_blocks - num_blocks_copied, mem.getMemorySize());
+			from_relation.getBlocks(num_blocks_copied, 0, num_blocks_coping);
+			to_relation.setBlocks(to_relation.getNumOfBlocks(), 0, num_blocks_coping);
+			num_blocks_copied += num_blocks_coping;
+		}
+
+	}
+
+	public static void displayTable(String relation_name, SchemaManager schema_manager, MainMemory mem) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_block_reading;
+		String output_str = relation.getSchema().fieldNamesToString()+"\n";
+		ArrayList<Tuple> tuples_in_block;
+
+		while (num_blocks_read < num_blocks) {
+			num_block_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_block_reading);
+			for (int i = 0; i < num_block_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					output_str += t.toString();
+					output_str += "\n";
+				}
+			}
+			num_blocks_read += num_block_reading;
+		}
+		System.out.println(output_str);
 
 	}
 
