@@ -128,6 +128,7 @@ public class StatementInterpreter {
 			}
 
 			boolean need_projection;
+			ArrayList<String> attr_proj_names = new ArrayList<String>();
 			if (tokens[scan_pt-1].equals("*")) {
 				need_projection = false;
 			} else {
@@ -138,7 +139,6 @@ public class StatementInterpreter {
 				} else {
 					amount_attr_proj = amount_select_tokens - 1;
 				}
-				ArrayList<String> attr_proj_names = new ArrayList<String>();
 				for (int i =0; i < amount_attr_proj; i++) {
 					attr_proj_names.add(tokens[scan_pt-i-1].replace(",", ""));
 				}
@@ -152,10 +152,11 @@ public class StatementInterpreter {
 
 			boolean has_condition = false;
 			boolean need_order = false;
+			String order_attr_name = null;
 			if (scan_pt == tokens.length) { // only select and from
 				// end reading tokens
 			} else if (tokens[scan_pt].equals("ORDER")) {
-				String order_attr_name = tokens[scan_pt+2];
+				order_attr_name = tokens[scan_pt+2];
 				need_order = true;
 			} else if (tokens[scan_pt].equals("WHERE")) {
 				has_condition = true;
@@ -168,23 +169,31 @@ public class StatementInterpreter {
 				 	// end reading
 				} else if (tokens[scan_pt].equals("ORDER")) {
 					need_order = true;
-					String order_attr_name = tokens[scan_pt+2];
+					order_attr_name = tokens[scan_pt+2];
 				}
 			}
 
 			if (from_table_names.size() == 1) {
 				// no need to join
 				if (has_condition) {
-					
+					if (!need_order) {
+						
+					}
 				} else {
 					if (need_order) {
-						
+						if (!need_projection && !need_distinct) {
+							LogicalPlan.displayOrderTable(from_table_names.get(0), schema_manager, mem, order_attr_name);	
+						}						
 					} else {
 						if (need_distinct) {
-							
+							if (need_projection) {
+								LogicalPlan.projectDistinctTable(from_table_names.get(0), schema_manager, mem, attr_proj_names);
+							} else {
+								LogicalPlan.displayDistinctTable(from_table_names.get(0), schema_manager, mem);
+							}
 						} else {
 							if (need_projection) {
-								
+								LogicalPlan.projectTable(from_table_names.get(0), schema_manager, mem, attr_proj_names);
 							} else {
 								LogicalPlan.displayTable(from_table_names.get(0), schema_manager, mem);
 							}

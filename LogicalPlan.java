@@ -1,5 +1,6 @@
 import storageManager.*;
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 public class LogicalPlan {
 
@@ -122,25 +123,254 @@ public class LogicalPlan {
 
 		int num_blocks = relation.getNumOfBlocks();
 		int num_blocks_read = 0;
-		int num_block_reading;
-		String output_str = relation.getSchema().fieldNamesToString()+"\n";
+		int num_blocks_reading;
+		String output_str = relation.getSchema().fieldNamesToString()+"\n\n";
 		ArrayList<Tuple> tuples_in_block;
 
 		while (num_blocks_read < num_blocks) {
-			num_block_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
-			relation.getBlocks(num_blocks_read, 0, num_block_reading);
-			for (int i = 0; i < num_block_reading; i++) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
 				tuples_in_block = mem.getBlock(i).getTuples();
 				for (Tuple t : tuples_in_block) {
 					output_str += t.toString();
 					output_str += "\n";
 				}
 			}
-			num_blocks_read += num_block_reading;
+			num_blocks_read += num_blocks_reading;
 		}
+		System.out.println("\n\n");
 		System.out.println(output_str);
 
 	}
 
+	public static void projectTable(String relation_name, SchemaManager schema_manager, MainMemory mem, ArrayList<String> attribute_names) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+		String prefixAllowed = relation_name + ".";
+		String output_str = "";
+
+		for (String attr_name : attribute_names) {
+			output_str += attr_name + "\t";
+		}
+		output_str += "\n\n";
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		ArrayList<Tuple> tuples_in_block;
+		Field tmp_field;
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					for (String attr : attribute_names) {
+						if (attr.contains(prefixAllowed)) {
+							attr = attr.replace(prefixAllowed, "");
+						}
+						tmp_field = t.getField(attr);
+						output_str += tmp_field.toString() + "\t";
+					}
+					output_str += "\n";
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+	}
+
+	// helper method to determine whether a collection of tuples contains a tuple
+	private static boolean hasThisTuple(Tuple tp, ArrayList<Tuple> tps) {
+		boolean compare_result = false;
+		Field tmp_field_1;
+		Field tmp_field_2;
+		for (Tuple t : tps) {
+			for (int i = 0; i < tp.getNumOfFields(); i++) {
+				tmp_field_1 = tp.getField(i);
+				tmp_field_2 = t.getField(i);
+				if (tmp_field_1.type == FieldType.STR20) {
+					if (!tmp_field_1.str.equals(tmp_field_2.str)) {
+						break;
+					}
+				} else {
+					if (tmp_field_1.integer != tmp_field_2.integer) {
+						break;
+					}
+				}
+				compare_result = true;
+			}
+			if (compare_result) {
+				break;
+			}
+		}
+		return compare_result;
+	}
+
+	private static boolean hasThisCombination(Tuple tp, ArrayList<Tuple> tps, ArrayList<String> attribute_names) {
+		boolean compare_result = false;
+		Field tmp_field_1;
+		Field tmp_field_2;
+		for (Tuple t : tps) {
+			for (String attr : attribute_names) {
+				tmp_field_1 = tp.getField(attr);
+				tmp_field_2 = t.getField(attr);
+				if (tmp_field_1.type == FieldType.STR20) {
+					if (!tmp_field_1.str.equals(tmp_field_2.str)) {
+						break;
+					}
+				} else {
+					if (tmp_field_1.integer != tmp_field_2.integer) {
+						break;
+					}
+				}
+				compare_result = true;
+			}
+			if (compare_result) {
+				break;
+			}
+		}
+		return compare_result;
+	}
+
+	public static void displayDistinctTable(String relation_name, SchemaManager schema_manager, MainMemory mem) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		String output_str = relation.getSchema().fieldNamesToString()+"\n\n";
+		ArrayList<Tuple> tuples_in_block;
+		ArrayList<Tuple> tuples_to_display = new ArrayList<Tuple>();
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (!hasThisTuple(t, tuples_to_display)) {
+						tuples_to_display.add(t);
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+		for (Tuple t : tuples_to_display) {
+			output_str += t.toString() + "\n";
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+	}
+
+	public static void projectDistinctTable(String relation_name, SchemaManager schema_manager, MainMemory mem, ArrayList<String> attribute_names) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+		String prefixAllowed = relation_name + ".";
+		String output_str = "";
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		ArrayList<String> attribute_names_1 = new ArrayList<String>();
+
+		for (String attr_name : attribute_names) {
+			output_str += attr_name + "\t";
+			if (attr_name.contains(prefixAllowed)) {
+				attribute_names_1.add(attr_name.replace(prefixAllowed, ""));
+			} else {
+				attribute_names_1.add(attr_name);
+			}
+		}
+		output_str += "\n\n";
+
+		ArrayList<Tuple> tuples_in_block;
+		ArrayList<Tuple> tuples_to_display = new ArrayList<Tuple>();
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (!hasThisCombination(t, tuples_to_display, attribute_names_1)) {
+						tuples_to_display.add(t);
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+
+		Field tmp_field;
+
+		for (Tuple t : tuples_to_display) {
+			for (String attr : attribute_names_1) {
+				tmp_field = t.getField(attr);
+				output_str += tmp_field.toString() + "\t";
+			}
+			output_str += "\n";
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+	}
+
+	public static void displayOrderTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String order_attribute) {
+
+		if (order_attribute == null) {
+			return;
+		}
+
+		Relation relation = schema_manager.getRelation(relation_name);
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		String output_str = relation.getSchema().fieldNamesToString()+"\n\n";
+		ArrayList<Tuple> tuples_in_block;
+		TreeMap<Comparable, ArrayList<Tuple>> attribute_to_tuple = new TreeMap<Comparable, ArrayList<Tuple>>();
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (t.getField(order_attribute).type == FieldType.STR20) {
+						if (!attribute_to_tuple.containsKey(t.getField(order_attribute).str)) {
+							attribute_to_tuple.put(t.getField(order_attribute).str, new ArrayList<Tuple>());
+						} else {
+							attribute_to_tuple.get(t.getField(order_attribute).str).add(t);
+						}		
+					} else {
+						if (!attribute_to_tuple.containsKey(new Integer(t.getField(order_attribute).integer))) {
+							attribute_to_tuple.put(new Integer(t.getField(order_attribute).integer), new ArrayList<Tuple>());
+						} else {
+							attribute_to_tuple.get(new Integer(t.getField(order_attribute).integer)).add(t);	
+						}
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+
+		ArrayList<Tuple> tuples_in_value;
+		for (Comparable c : attribute_to_tuple.keySet()) {
+			tuples_in_value = attribute_to_tuple.get(c);
+			for (Tuple t : tuples_in_value) {
+				output_str += t.toString() + "\n";
+			}
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+
+	}
 
 }
