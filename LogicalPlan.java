@@ -370,7 +370,110 @@ public class LogicalPlan {
 		System.out.println("\n\n");
 		System.out.println(output_str);
 
+	}
 
+	private static String joinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem) {
+
+		// create joined table
+		String joined_name = "";
+		ArrayList<String> joined_field_names = new ArrayList<String>();
+		ArrayList<FieldType> joined_field_types = new ArrayList<FieldType>();
+		Relation tmp_relation;
+		Schema tmp_schema;
+		for (String name : table_names) {
+			joined_name += name;
+			tmp_relation = schema_manager.getRelation(name);
+			tmp_schema = tmp_relation.getSchema();
+			for (String s : tmp_schema.getFieldNames()) {
+				joined_field_names.add(name+"."+s);
+			}
+			joined_field_types.addAll(tmp_schema.getFieldTypes());
+		}
+		Schema joined_schema = new Schema(joined_field_names, joined_field_types);
+		schema_manager.createRelation(joined_name, joined_schema);
+		
+		// create cross product tuples
+		//ArrayList<ArrayList<Tuple>> joining_tables = new ArrayList<ArrayList<Tuple>>();
+		ArrayList<ArrayList<ArrayList<String>>> joining_tables_value = new ArrayList<ArrayList<ArrayList<String>>>();
+		//ArrayList<Tuple> tmp_tuples;
+		ArrayList<ArrayList<String>> tmp_table_values;
+		ArrayList<String> tmp_tuple_value;
+		int num_blocks;
+		int num_blocks_read;
+		int num_blocks_reading;
+		ArrayList<Tuple> tuples_in_block;
+
+		for (String name : table_names) {
+			tmp_relation = schema_manager.getRelation(name);
+			//tmp_tuples = new ArrayList<Tuple>();
+			tmp_table_values = new ArrayList<ArrayList<String>>();
+
+			num_blocks = tmp_relation.getNumOfBlocks();
+			num_blocks_read = 0;
+			
+			while (num_blocks_read < num_blocks) {
+				num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+				tmp_relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+				for (int i = 0; i < num_blocks_reading; i++) {
+					tuples_in_block = mem.getBlock(i).getTuples();
+					for (Tuple t : tuples_in_block) {
+						//tmp_tuples.add(t);
+						tmp_tuple_value = new ArrayList<String>();
+						for (int j = 0; j < t.getNumOfFields(); j++) {
+							tmp_tuple_value.add(t.getField(j).toString());
+						}
+						tmp_table_values.add(tmp_tuple_value);
+					}
+				}
+				num_blocks_read += num_blocks_reading;
+			}
+			//joining_tables.add(tmp_tuples);
+			joining_tables_value.add(tmp_table_values);
+		}
+
+		ArrayList<ArrayList<String>> joined_tuples_value = getJoinedValues(joining_tables_value);
+		for (ArrayList<String> tpv : joined_tuples_value) {
+			insertTuple(joined_name, joined_field_names, tpv, schema_manager, mem);
+		}
+
+		return joined_name;
+	}
+
+	private static ArrayList<ArrayList<String>> getJoinedValues(ArrayList<ArrayList<ArrayList<String>>> joining_tables_value) {
+		assert joining_tables_value.size() > 0;
+		ArrayList<ArrayList<String>> results_tuples_value;
+		if (joining_tables_value.size() == 1) {
+			return joining_tables_value.get(0);
+		} else if (joining_tables_value.size() == 2) {
+			results_tuples_value = new ArrayList<ArrayList<String>>();
+			ArrayList<String> tmp_tuple_value;
+			ArrayList<ArrayList<String>> table_values_0 = joining_tables_value.get(0);
+			ArrayList<ArrayList<String>> table_values_1 = joining_tables_value.get(1);
+			for (ArrayList<String> tpv_0 : table_values_0) {
+				for (ArrayList<String> tpv_1 : table_values_1) {
+					tmp_tuple_value = new ArrayList<String>();
+					tmp_tuple_value.addAll(tpv_0);
+					tmp_tuple_value.addAll(tpv_1);
+					results_tuples_value.add(tmp_tuple_value);
+				}
+			}
+			return results_tuples_value;
+		} else {
+			ArrayList<ArrayList<ArrayList<String>>> first_two_joining_tables = new ArrayList<ArrayList<ArrayList<String>>>();
+			first_two_joining_tables.add(joining_tables_value.get(0));
+			first_two_joining_tables.add(joining_tables_value.get(1));
+			ArrayList<ArrayList<ArrayList<String>>> first_two_joined_tables = new ArrayList<ArrayList<ArrayList<String>>>();
+			first_two_joined_tables.add(getJoinedValues(first_two_joining_tables));
+			for (int i = 2; i < joining_tables_value.size(); i++) {
+				first_two_joined_tables.add(joining_tables_value.get(i));
+			}
+			return getJoinedValues(first_two_joined_tables);
+		}
+	}
+
+	public static void displayJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem) {
+		String joined_name = joinTables(table_names, schema_manager, mem);
+		displayTable(joined_name, schema_manager, mem);
 	}
 
 }

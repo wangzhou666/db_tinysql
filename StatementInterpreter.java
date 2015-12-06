@@ -202,11 +202,20 @@ public class StatementInterpreter {
 				}
 			} else {
 				// needs join
-
+				if (has_condition) {
+					
+				} else {
+					if (need_distinct) {
+						
+					} else {
+						if (need_projection) {
+							
+						} else {
+							LogicalPlan.displayJoinTables(from_table_names, schema_manager, mem);
+						}
+					}
+				}
 			}  
-
-
-
 		} else {
 			assert false;
 		}
