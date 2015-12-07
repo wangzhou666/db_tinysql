@@ -1,6 +1,7 @@
 import storageManager.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.Stack;
 
 public class LogicalPlan {
 
@@ -474,6 +475,84 @@ public class LogicalPlan {
 	public static void displayJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem) {
 		String joined_name = joinTables(table_names, schema_manager, mem);
 		displayTable(joined_name, schema_manager, mem);
+		dropTable(joined_name, schema_manager);
+	}
+
+	private static boolean checkTupleCondition(Tuple checking_tuple, String[] postfix_tokens) {
+	
+		if (postfix_tokens.length == 0) {
+			return true;
+		}
+
+		Stack<String> result_stack = new Stack<String>();
+		String current_token;
+		String tmp_operand;
+		String tmp_operand_1;
+		String tmp_operand_2;
+		boolean tmp_op_val_1;
+		boolean tmp_op_val_2;
+		boolean result_val;
+		for (int i = 0; i < postfix_tokens.length; i++) {
+			current_token = postfix_tokens[i];
+			if (isOperator(current_token)) {
+				if (current_token.equals("!")) {
+
+					tmp_operand = result_stack.pop();
+					assert tmp_operand.equals("true") || tmp_operand.equals("false");					
+					if (tmp_operand.equals("true")) {
+						result_stack.push("false");
+					} else {
+						result_stack.push("true");
+					}  
+				} else {
+					tmp_operand_2 = result_stack.pop();
+					tmp_operand_1 = result_stack.pop();
+					assert tmp_operand_2.equals("true") || tmp_operand_2.equals("false");
+					assert tmp_operand_1.equals("true") || tmp_operand_1.equals("false");
+					assert !current_token.equals("^");
+
+					if (current_token.equals("&") || current_token.equals("|")) {
+						
+						if (tmp_operand_1.equals("true")) {
+							tmp_op_val_1 = true;
+						} else {
+							tmp_op_val_1 = false;
+						}
+						if (tmp_operand_2.equals("true")) {
+							tmp_op_val_2 = true;
+						} else {
+							tmp_op_val_2 = false;
+						}
+
+						if (current_token.equals("&")) {
+							result_val = tmp_op_val_1 && tmp_op_val_2;
+						} else {
+							result_val = tmp_op_val_1 || tmp_op_val_2;
+						}
+
+						if (result_val) {
+							result_stack.push("true");
+						} else {
+							result_stack.push("false");
+						}
+					} else {
+						// handle +-*/
+						
+					}
+					
+				}
+			} else {
+				result_stack.push(current_token);
+			}
+		}
+	}
+
+	private static boolean isOperator(String token) {
+		if ("|&-+/*^!".contains(token)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }

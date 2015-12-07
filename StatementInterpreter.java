@@ -153,6 +153,7 @@ public class StatementInterpreter {
 			boolean has_condition = false;
 			boolean need_order = false;
 			String order_attr_name = null;
+			String[] where_tokens = new String[] {};
 			if (scan_pt == tokens.length) { // only select and from
 				// end reading tokens
 			} else if (tokens[scan_pt].equals("ORDER")) {
@@ -161,7 +162,7 @@ public class StatementInterpreter {
 			} else if (tokens[scan_pt].equals("WHERE")) {
 				has_condition = true;
 				int amount_where_tokens = findClauseLength(tokens, scan_pt, reservedWords);
-				String[] where_tokens = new String[amount_where_tokens-1];
+				where_tokens = new String[amount_where_tokens-1];
 				System.arraycopy(tokens, scan_pt+1, where_tokens, 0, amount_where_tokens-1);
 				// do something
 				scan_pt += amount_where_tokens;
@@ -173,17 +174,26 @@ public class StatementInterpreter {
 				}
 			}
 
+			String where_infix = String.join(" ", where_tokens);
+			String where_postfix = ShuntingYard.infixToPostfix(where_infix);
+			String[] tokens_postfix = where_postfix.split(" ");
+
 			if (from_table_names.size() == 1) {
 				// no need to join
 				if (has_condition) {
 					if (!need_order) {
+
 						
+					} else {
+						declareInvalidStatement();
 					}
 				} else {
 					if (need_order) {
 						if (!need_projection && !need_distinct) {
 							LogicalPlan.displayOrderTable(from_table_names.get(0), schema_manager, mem, order_attr_name);	
-						}						
+						} else {
+							declareInvalidStatement();
+						}					
 					} else {
 						if (need_distinct) {
 							if (need_projection) {
@@ -217,7 +227,7 @@ public class StatementInterpreter {
 				}
 			}  
 		} else {
-			assert false;
+			declareInvalidStatement();
 		}
 	}
 
@@ -253,4 +263,9 @@ public class StatementInterpreter {
 		}
 		return i-sc_pt;
 	}
+
+	private static void declareInvalidStatement() {
+		System.out.println("This structure has not been implemented");
+	}
+
 }

@@ -4,13 +4,13 @@ public class ShuntingYard {
  
     public static void main(String[] args) {
         String infix = "3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3";
-        String infix2 = "jj |  1 + 2";
+        String infix2 = "! ( jj +  66 ) |  1 + 2";
         System.out.printf("infix:   %s%n", infix2);
         System.out.printf("postfix: %s%n", infixToPostfix(infix2));
     }
  
     public static String infixToPostfix(String infix) {
-        final String ops = "|&-+/*^";
+        final String ops = "|&-+/*^!";
         StringBuilder sb = new StringBuilder();
         Stack<Integer> s = new Stack<>();
  
