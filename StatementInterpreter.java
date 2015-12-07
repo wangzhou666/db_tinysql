@@ -10,7 +10,7 @@ public class StatementInterpreter {
 		if (tokens.length == 0) {
 			return;
 		}
-		
+
 		if (tokens[0].equals("CREATE") && tokens[1].equals("TABLE")) { // to create a table
 			scan_pt += 2;
 			String relation_name = tokens[2];
@@ -188,8 +188,12 @@ public class StatementInterpreter {
 			if (from_table_names.size() == 1) {
 				// no need to join
 				if (has_condition) {
-					if (!need_order && !need_projection && !need_distinct) {
-						LogicalPlan.displayConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix);
+					if (!need_order && !need_distinct) {
+						if (need_projection) {
+							LogicalPlan.projectConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix, attr_proj_names);
+						} else {
+							LogicalPlan.displayConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix);
+						}
 					} else {
 						declareInvalidStatement();
 					}
@@ -219,7 +223,27 @@ public class StatementInterpreter {
 			} else {
 				// needs join
 				if (has_condition) {
-					
+					if (need_distinct) {
+						if (need_projection) {
+							if (need_order) {
+								
+							} else {
+								LogicalPlan.projectConditionedDistinctJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
+							}
+						} else {
+							declareInvalidStatement();
+						}
+					} else {
+						if (need_projection) {
+							LogicalPlan.projectConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
+						} else {
+							if (need_order) {
+								
+							} else {
+								LogicalPlan.displayConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix);
+							}
+						}
+					}
 				} else {
 					if (need_distinct) {
 						

@@ -185,6 +185,49 @@ public class LogicalPlan {
 
 	}
 
+	public static void projectConditionedTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+		String prefixAllowed = relation_name + ".";
+		String output_str = "";
+
+		for (String attr_name : attribute_names) {
+			output_str += attr_name + "\t";
+		}
+		output_str += "\n\n";
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		ArrayList<Tuple> tuples_in_block;
+		Field tmp_field;
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (!checkTupleCondition(t, postfix_tokens)) {
+						continue;
+					}
+					for (String attr : attribute_names) {
+						if (attr.contains(prefixAllowed)) {
+							attr = attr.replace(prefixAllowed, "");
+						}
+						tmp_field = t.getField(attr);
+						output_str += tmp_field.toString() + "\t";
+					}
+					output_str += "\n";
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+	}
+
 	// helper method to determine whether a collection of tuples contains a tuple
 	private static boolean hasThisTuple(Tuple tp, ArrayList<Tuple> tps) {
 		boolean compare_result = false;
@@ -301,6 +344,58 @@ public class LogicalPlan {
 				tuples_in_block = mem.getBlock(i).getTuples();
 				for (Tuple t : tuples_in_block) {
 					if (!hasThisCombination(t, tuples_to_display, attribute_names_1)) {
+						tuples_to_display.add(t);
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+
+		Field tmp_field;
+
+		for (Tuple t : tuples_to_display) {
+			for (String attr : attribute_names_1) {
+				tmp_field = t.getField(attr);
+				output_str += tmp_field.toString() + "\t";
+			}
+			output_str += "\n";
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+	}
+
+	public static void projectConditionedDistinctTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+		String prefixAllowed = relation_name + ".";
+		String output_str = "";
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		ArrayList<String> attribute_names_1 = new ArrayList<String>();
+
+		for (String attr_name : attribute_names) {
+			output_str += attr_name + "\t";
+			if (attr_name.contains(prefixAllowed)) {
+				attribute_names_1.add(attr_name.replace(prefixAllowed, ""));
+			} else {
+				attribute_names_1.add(attr_name);
+			}
+		}
+		output_str += "\n\n";
+
+		ArrayList<Tuple> tuples_in_block;
+		ArrayList<Tuple> tuples_to_display = new ArrayList<Tuple>();
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (!hasThisCombination(t, tuples_to_display, attribute_names_1) && checkTupleCondition(t, postfix_tokens)) {
 						tuples_to_display.add(t);
 					}
 				}
@@ -671,6 +766,30 @@ public class LogicalPlan {
 		}
 		System.out.println("\n\n");
 		System.out.println(output_str);
+
+	}
+
+	public static void displayConditionedJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens) {
+
+		String joined_name = joinTables(table_names, schema_manager, mem);
+		displayConditionedTable(joined_name, schema_manager, mem, postfix_tokens);
+		dropTable(joined_name, schema_manager);
+
+	}
+
+	public static void projectConditionedJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+
+		String joined_table_name = joinTables(table_names, schema_manager, mem);
+		projectConditionedTable(joined_table_name, schema_manager, mem, postfix_tokens, attribute_names);
+		dropTable(joined_table_name, schema_manager);
+
+	}
+
+	public static void projectConditionedDistinctJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+
+		String joined_table_name = joinTables(table_names, schema_manager, mem);
+		projectConditionedDistinctTable(joined_table_name, schema_manager, mem, postfix_tokens, attribute_names);
+		dropTable(joined_table_name, schema_manager);
 
 	}
 
