@@ -7,6 +7,10 @@ public class StatementInterpreter {
 		String[] tokens = line.split(" ");
 		int scan_pt = 0;
 
+		if (tokens.length == 0) {
+			return;
+		}
+		
 		if (tokens[0].equals("CREATE") && tokens[1].equals("TABLE")) { // to create a table
 			scan_pt += 2;
 			String relation_name = tokens[2];
@@ -175,15 +179,17 @@ public class StatementInterpreter {
 			}
 
 			String where_infix = String.join(" ", where_tokens);
+			where_infix = where_infix.replace("AND", "&");
+			where_infix = where_infix.replace("OR", "|");
+			where_infix = where_infix.replace("NOT", "!");
 			String where_postfix = ShuntingYard.infixToPostfix(where_infix);
 			String[] tokens_postfix = where_postfix.split(" ");
 
 			if (from_table_names.size() == 1) {
 				// no need to join
 				if (has_condition) {
-					if (!need_order) {
-
-						
+					if (!need_order && !need_projection && !need_distinct) {
+						LogicalPlan.displayConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix);
 					} else {
 						declareInvalidStatement();
 					}

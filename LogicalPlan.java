@@ -484,6 +484,8 @@ public class LogicalPlan {
 			return true;
 		}
 
+		Schema schema = checking_tuple.getSchema();
+		ArrayList<String> table_field_names = schema.getFieldNames();
 		Stack<String> result_stack = new Stack<String>();
 		String current_token;
 		String tmp_operand;
@@ -492,6 +494,13 @@ public class LogicalPlan {
 		boolean tmp_op_val_1;
 		boolean tmp_op_val_2;
 		boolean result_val;
+		int tmp_op_int_1 = 0;
+		int tmp_op_int_2 = 0;
+		String tmp_op_str_1 = "";
+		String tmp_op_str_2 = "";
+		boolean field_is_str20;
+		int tmp_int_result;
+
 		for (int i = 0; i < postfix_tokens.length; i++) {
 			current_token = postfix_tokens[i];
 			if (isOperator(current_token)) {
@@ -507,12 +516,12 @@ public class LogicalPlan {
 				} else {
 					tmp_operand_2 = result_stack.pop();
 					tmp_operand_1 = result_stack.pop();
-					assert tmp_operand_2.equals("true") || tmp_operand_2.equals("false");
-					assert tmp_operand_1.equals("true") || tmp_operand_1.equals("false");
 					assert !current_token.equals("^");
 
 					if (current_token.equals("&") || current_token.equals("|")) {
 						
+						assert tmp_operand_2.equals("true") || tmp_operand_2.equals("false");
+						assert tmp_operand_1.equals("true") || tmp_operand_1.equals("false");
 						if (tmp_operand_1.equals("true")) {
 							tmp_op_val_1 = true;
 						} else {
@@ -536,23 +545,133 @@ public class LogicalPlan {
 							result_stack.push("false");
 						}
 					} else {
-						// handle +-*/
-						
+						// handle +-*/<>=
+						if (isAttribute(tmp_operand_1, table_field_names)) {
+							if (checking_tuple.getField(tmp_operand_1).type == FieldType.STR20) {
+								field_is_str20 = true;
+								tmp_op_str_1 = checking_tuple.getField(tmp_operand_1).toString();
+							} else {
+								field_is_str20 = false;
+								tmp_op_int_1 = Integer.parseInt(checking_tuple.getField(tmp_operand_1).toString());
+							}
+						} else {
+							if (tmp_operand_1.contains("\"")) {
+								field_is_str20 = true;
+								tmp_op_str_1 = tmp_operand_1.replace("\"", "");
+							} else {
+								field_is_str20 = false;
+								tmp_op_int_1 = Integer.parseInt(tmp_operand_1);
+							}
+						}
+
+						if (isAttribute(tmp_operand_2, table_field_names)) {
+							if (field_is_str20) {
+								tmp_op_str_2 = checking_tuple.getField(tmp_operand_2).toString();
+							} else {
+								tmp_op_int_2 = Integer.parseInt(checking_tuple.getField(tmp_operand_2).toString());
+							}
+						} else {
+							if (field_is_str20) {
+								tmp_op_str_2 = tmp_operand_2.replace("\"", "");
+							} else {
+								tmp_op_int_2 = Integer.parseInt(tmp_operand_2);
+							}
+						}
+
+						if (field_is_str20) {
+							assert current_token.equals("=");
+							if (tmp_op_str_1.equals(tmp_op_str_2)) {
+								result_stack.push("true");
+							} else {
+								result_stack.push("false");
+							}
+						} else {
+							if (current_token.equals("=")) {
+								if (tmp_op_int_1 == tmp_op_int_2) {
+									result_stack.push("true");
+								} else {
+									result_stack.push("false");
+								}
+							} else if (current_token.equals(">")) {
+								if (tmp_op_int_1 > tmp_op_int_2) {
+									result_stack.push("true");
+								} else {
+									result_stack.push("false");
+								}
+							} else if (current_token.equals("<")) {
+								if (tmp_op_int_1 < tmp_op_int_2) {
+									result_stack.push("true");
+								} else {
+									result_stack.push("false");
+								}
+							} else if (current_token.equals("+")) {
+								tmp_int_result = tmp_op_int_1 + tmp_op_int_2;
+								result_stack.push(Integer.toString(tmp_int_result));
+							} else if (current_token.equals("-")) {
+								tmp_int_result = tmp_op_int_1 - tmp_op_int_2;
+								result_stack.push(Integer.toString(tmp_int_result));
+							} else if (current_token.equals("*")) {
+								tmp_int_result = tmp_op_int_1 * tmp_op_int_2;
+								result_stack.push(Integer.toString(tmp_int_result));
+							} else if (current_token.equals("/")) {
+								tmp_int_result = tmp_op_int_1 / tmp_op_int_2;
+								result_stack.push(Integer.toString(tmp_int_result));
+							} else {
+								assert false;
+							}
+						}
 					}
-					
 				}
 			} else {
 				result_stack.push(current_token);
 			}
 		}
-	}
-
-	private static boolean isOperator(String token) {
-		if ("|&-+/*^!".contains(token)) {
+		if (result_stack.peek().equals("true")) {
 			return true;
 		} else {
 			return false;
 		}
+	}
+
+	private static boolean isAttribute(String token, ArrayList<String> field_names) {
+		return field_names.contains(token);
+	}
+
+	private static boolean isOperator(String token) {
+		if ("|&<>!=-+/*^".contains(token)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public static void displayConditionedTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens) {
+
+		Relation relation = schema_manager.getRelation(relation_name);
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		String output_str = relation.getSchema().fieldNamesToString()+"\n\n";
+		ArrayList<Tuple> tuples_in_block;
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (checkTupleCondition(t, postfix_tokens)) {
+						output_str += t.toString();
+						output_str += "\n";
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
 	}
 
 }
