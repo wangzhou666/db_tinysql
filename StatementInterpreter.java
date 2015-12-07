@@ -161,8 +161,8 @@ public class StatementInterpreter {
 			} else if (tokens[scan_pt].equals("WHERE")) {
 				has_condition = true;
 				int amount_where_tokens = findClauseLength(tokens, scan_pt, reservedWords);
-				String[] where_tokens = new String[amount_where_tokens];
-				System.arraycopy(tokens, scan_pt, where_tokens, 0, amount_where_tokens);
+				String[] where_tokens = new String[amount_where_tokens-1];
+				System.arraycopy(tokens, scan_pt+1, where_tokens, 0, amount_where_tokens-1);
 				// do something
 				scan_pt += amount_where_tokens;
 				if (scan_pt == tokens.length) {
