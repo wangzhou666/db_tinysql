@@ -226,7 +226,7 @@ public class StatementInterpreter {
 					if (need_distinct) {
 						if (need_projection) {
 							if (need_order) {
-								
+								LogicalPlan.projectConditionedDistinctOrderJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names, order_attr_name);
 							} else {
 								LogicalPlan.projectConditionedDistinctJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
 							}
@@ -238,7 +238,7 @@ public class StatementInterpreter {
 							LogicalPlan.projectConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
 						} else {
 							if (need_order) {
-								
+								LogicalPlan.displayConditionedOrderJoinTables(from_table_names, schema_manager, mem, tokens_postfix, order_attr_name);
 							} else {
 								LogicalPlan.displayConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix);
 							}
@@ -246,10 +246,10 @@ public class StatementInterpreter {
 					}
 				} else {
 					if (need_distinct) {
-						
+						declareInvalidStatement();
 					} else {
 						if (need_projection) {
-							
+							declareInvalidStatement();
 						} else {
 							LogicalPlan.displayJoinTables(from_table_names, schema_manager, mem);
 						}

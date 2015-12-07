@@ -5,8 +5,8 @@ import java.util.Stack;
 
 public class LogicalPlan {
 
-	public static void createTable(String relation_name, ArrayList<String> field_names, ArrayList<FieldType> field_types, 
-		SchemaManager schema_manager) {
+	public static void createTable(String relation_name, ArrayList<String> field_names, 
+		ArrayList<FieldType> field_types, SchemaManager schema_manager) {
 		
 		Schema schema = new Schema(field_names, field_types);
 		schema_manager.createRelation(relation_name, schema);
@@ -53,8 +53,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void insertTuple(String relation_name, ArrayList<String> field_names, ArrayList<String> field_values, 
-		SchemaManager schema_manager, MainMemory mem) {
+	public static void insertTuple(String relation_name, ArrayList<String> field_names, 
+		ArrayList<String> field_values, SchemaManager schema_manager, MainMemory mem) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 		Tuple tuple = relation.createTuple();
@@ -145,7 +145,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void projectTable(String relation_name, SchemaManager schema_manager, MainMemory mem, ArrayList<String> attribute_names) {
+	public static void projectTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, ArrayList<String> attribute_names) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 		String prefixAllowed = relation_name + ".";
@@ -185,7 +186,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void projectConditionedTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+	public static void projectConditionedTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 		String prefixAllowed = relation_name + ".";
@@ -281,7 +283,8 @@ public class LogicalPlan {
 		return compare_result;
 	}
 
-	public static void displayDistinctTable(String relation_name, SchemaManager schema_manager, MainMemory mem) {
+	public static void displayDistinctTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 
@@ -313,7 +316,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void projectDistinctTable(String relation_name, SchemaManager schema_manager, MainMemory mem, ArrayList<String> attribute_names) {
+	public static void projectDistinctTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, ArrayList<String> attribute_names) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 		String prefixAllowed = relation_name + ".";
@@ -365,7 +369,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void projectConditionedDistinctTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+	public static void projectConditionedDistinctTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 		String prefixAllowed = relation_name + ".";
@@ -417,7 +422,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void displayOrderTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String order_attribute) {
+	public static void displayOrderTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, String order_attribute) {
 
 		if (order_attribute == null) {
 			return;
@@ -441,15 +447,13 @@ public class LogicalPlan {
 					if (t.getField(order_attribute).type == FieldType.STR20) {
 						if (!attribute_to_tuple.containsKey(t.getField(order_attribute).str)) {
 							attribute_to_tuple.put(t.getField(order_attribute).str, new ArrayList<Tuple>());
-						} else {
-							attribute_to_tuple.get(t.getField(order_attribute).str).add(t);
-						}		
+						}
+						attribute_to_tuple.get(t.getField(order_attribute).str).add(t);		
 					} else {
 						if (!attribute_to_tuple.containsKey(new Integer(t.getField(order_attribute).integer))) {
 							attribute_to_tuple.put(new Integer(t.getField(order_attribute).integer), new ArrayList<Tuple>());
-						} else {
-							attribute_to_tuple.get(new Integer(t.getField(order_attribute).integer)).add(t);	
 						}
+						attribute_to_tuple.get(new Integer(t.getField(order_attribute).integer)).add(t);	
 					}
 				}
 			}
@@ -468,7 +472,139 @@ public class LogicalPlan {
 
 	}
 
-	private static String joinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem) {
+	public static void displayConditionedOrderTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, String order_attribute) {
+
+		if (order_attribute == null) {
+			return;
+		}
+
+		Relation relation = schema_manager.getRelation(relation_name);
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		String output_str = relation.getSchema().fieldNamesToString()+"\n\n";
+		ArrayList<Tuple> tuples_in_block;
+		TreeMap<Comparable, ArrayList<Tuple>> attribute_to_tuple = new TreeMap<Comparable, ArrayList<Tuple>>();
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (!checkTupleCondition(t, postfix_tokens)) {
+						continue;
+					}
+					if (t.getField(order_attribute).type == FieldType.STR20) {
+						if (!attribute_to_tuple.containsKey(t.getField(order_attribute).str)) {
+							attribute_to_tuple.put(t.getField(order_attribute).str, new ArrayList<Tuple>());
+						}
+						attribute_to_tuple.get(t.getField(order_attribute).str).add(t);		
+					} else {
+						if (!attribute_to_tuple.containsKey(new Integer(t.getField(order_attribute).integer))) {
+							attribute_to_tuple.put(new Integer(t.getField(order_attribute).integer), new ArrayList<Tuple>());
+						}
+						attribute_to_tuple.get(new Integer(t.getField(order_attribute).integer)).add(t);	
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+
+		ArrayList<Tuple> tuples_in_value;
+		for (Comparable c : attribute_to_tuple.keySet()) {
+			tuples_in_value = attribute_to_tuple.get(c);
+			for (Tuple t : tuples_in_value) {
+				output_str += t.toString() + "\n";
+			}
+		}
+		System.out.println("\n\n");
+		System.out.println(output_str);
+
+	}
+
+	public static void projectConditionedDistinctOrderTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, 
+		ArrayList<String> attribute_names, String order_attribute) {
+
+		if (order_attribute == null) {
+			return;
+		}
+
+		Relation relation = schema_manager.getRelation(relation_name);
+
+		int num_blocks = relation.getNumOfBlocks();
+		int num_blocks_read = 0;
+		int num_blocks_reading;
+		String output_str = "";
+		ArrayList<Tuple> tuples_in_block;
+		TreeMap<Comparable, ArrayList<Tuple>> attribute_to_tuple = new TreeMap<Comparable, ArrayList<Tuple>>();
+
+		while (num_blocks_read < num_blocks) {
+			num_blocks_reading = Math.min(num_blocks - num_blocks_read, mem.getMemorySize());
+			relation.getBlocks(num_blocks_read, 0, num_blocks_reading);
+			for (int i = 0; i < num_blocks_reading; i++) {
+				tuples_in_block = mem.getBlock(i).getTuples();
+				for (Tuple t : tuples_in_block) {
+					if (!checkTupleCondition(t, postfix_tokens)) {
+						continue;
+					}
+					if (t.getField(order_attribute).type == FieldType.STR20) {
+						if (!attribute_to_tuple.containsKey(t.getField(order_attribute).str)) {
+							attribute_to_tuple.put(t.getField(order_attribute).str, new ArrayList<Tuple>());
+						}
+						attribute_to_tuple.get(t.getField(order_attribute).str).add(t);		
+					} else {
+						if (!attribute_to_tuple.containsKey(new Integer(t.getField(order_attribute).integer))) {
+							attribute_to_tuple.put(new Integer(t.getField(order_attribute).integer), new ArrayList<Tuple>());
+						}
+						attribute_to_tuple.get(new Integer(t.getField(order_attribute).integer)).add(t);	
+					}
+				}
+			}
+			num_blocks_read += num_blocks_reading;
+		}
+
+		ArrayList<Tuple> tuples_in_order = new ArrayList<Tuple>();
+		ArrayList<Tuple> tuples_in_value;
+		for (Comparable c : attribute_to_tuple.keySet()) {
+			tuples_in_value = attribute_to_tuple.get(c);
+			for (Tuple t : tuples_in_value) {
+				tuples_in_order.add(t);
+			}
+		}
+
+		ArrayList<Tuple> tuples_to_display = new ArrayList<Tuple>();
+		ArrayList<String> attribute_names_1 = new ArrayList<String>();
+		for (String attr_name : attribute_names) {
+			output_str += attr_name + "\t";
+			attribute_names_1.add(attr_name);
+		}
+		output_str += "\n\n";
+
+		for (Tuple t : tuples_in_order) {
+			if (!hasThisCombination(t, tuples_to_display, attribute_names_1)) {
+				tuples_to_display.add(t);
+			}
+		}
+
+		Field tmp_field;
+		for (Tuple t : tuples_to_display) {
+			for (String attr : attribute_names_1) {
+				tmp_field = t.getField(attr);
+				output_str += tmp_field.toString() + "\t";
+			}
+			output_str += "\n";
+		}
+
+		System.out.println(output_str);
+
+	}
+
+	private static String joinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem) {
 
 		// create joined table
 		String joined_name = "";
@@ -567,7 +703,8 @@ public class LogicalPlan {
 		}
 	}
 
-	public static void displayJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem) {
+	public static void displayJoinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem) {
 		String joined_name = joinTables(table_names, schema_manager, mem);
 		displayTable(joined_name, schema_manager, mem);
 		dropTable(joined_name, schema_manager);
@@ -740,7 +877,8 @@ public class LogicalPlan {
 		}
 	}
 
-	public static void displayConditionedTable(String relation_name, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens) {
+	public static void displayConditionedTable(String relation_name, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens) {
 
 		Relation relation = schema_manager.getRelation(relation_name);
 
@@ -769,7 +907,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void displayConditionedJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens) {
+	public static void displayConditionedJoinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens) {
 
 		String joined_name = joinTables(table_names, schema_manager, mem);
 		displayConditionedTable(joined_name, schema_manager, mem, postfix_tokens);
@@ -777,7 +916,8 @@ public class LogicalPlan {
 
 	}
 
-	public static void projectConditionedJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+	public static void projectConditionedJoinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
 
 		String joined_table_name = joinTables(table_names, schema_manager, mem);
 		projectConditionedTable(joined_table_name, schema_manager, mem, postfix_tokens, attribute_names);
@@ -785,12 +925,33 @@ public class LogicalPlan {
 
 	}
 
-	public static void projectConditionedDistinctJoinTables(ArrayList<String> table_names, SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
+	public static void projectConditionedDistinctJoinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names) {
 
 		String joined_table_name = joinTables(table_names, schema_manager, mem);
 		projectConditionedDistinctTable(joined_table_name, schema_manager, mem, postfix_tokens, attribute_names);
 		dropTable(joined_table_name, schema_manager);
 
 	}
+
+	public static void displayConditionedOrderJoinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, String order_attribute) {
+
+		String joined_table_name = joinTables(table_names, schema_manager, mem);
+		displayConditionedOrderTable(joined_table_name, schema_manager, mem, postfix_tokens, order_attribute);
+		dropTable(joined_table_name, schema_manager);
+
+	}
+
+	public static void projectConditionedDistinctOrderJoinTables(ArrayList<String> table_names, 
+		SchemaManager schema_manager, MainMemory mem, String[] postfix_tokens, ArrayList<String> attribute_names, String order_attribute) {
+
+		String joined_table_name = joinTables(table_names, schema_manager, mem);
+		projectConditionedDistinctOrderTable(joined_table_name, schema_manager, mem, postfix_tokens, attribute_names, order_attribute);
+		dropTable(joined_table_name, schema_manager);
+
+	}
+
+
 
 }
