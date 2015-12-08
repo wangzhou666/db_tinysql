@@ -43,14 +43,14 @@ public class StatementInterpreter {
 				scan_pt += 2;
 			}
 
-			LogicalPlan.createTable(relation_name, field_names, field_types, schema_manager);
+			QueryPlan.createTable(relation_name, field_names, field_types, schema_manager);
 
 		} else if (tokens[0].equals("DROP") && tokens[1].equals("TABLE")) { // to delete a table
 			scan_pt += 2;
 			String relation_name = tokens[2];
 			scan_pt += 1;
 
-		 	LogicalPlan.dropTable(relation_name, schema_manager);
+		 	QueryPlan.dropTable(relation_name, schema_manager);
 
 		} else if (tokens[0].equals("INSERT") && tokens[1].equals("INTO")) { // to insert value(s) to a table
 			scan_pt += 2;
@@ -90,13 +90,13 @@ public class StatementInterpreter {
 					scan_pt++;
 				}
 
-				LogicalPlan.insertTuple(relation_name, field_names, field_values, schema_manager, mem);
+				QueryPlan.insertTuple(relation_name, field_names, field_values, schema_manager, mem);
 
 			} else if (tokens[scan_pt].equals("SELECT")) {
 			
 				assert tokens[scan_pt+1].equals("*");
 				String from_relation_name = tokens[scan_pt+3];
-				LogicalPlan.insertTuples(relation_name, from_relation_name, schema_manager, mem);
+				QueryPlan.insertTuples(relation_name, from_relation_name, schema_manager, mem);
 
 
 			} else {
@@ -115,7 +115,7 @@ public class StatementInterpreter {
 				attribute_value = tokens[6].replace("\"","");
 				}
 			} 
-			LogicalPlan.deleteTuples(relation_name, attribute_name, attribute_value, schema_manager, mem);
+			QueryPlan.deleteTuples(relation_name, attribute_name, attribute_value, schema_manager, mem);
 
 		} else if (tokens[0].equals("SELECT")) { // to display tuples
 			
@@ -190,9 +190,9 @@ public class StatementInterpreter {
 				if (has_condition) {
 					if (!need_order && !need_distinct) {
 						if (need_projection) {
-							LogicalPlan.projectConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix, attr_proj_names);
+							QueryPlan.projectConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix, attr_proj_names);
 						} else {
-							LogicalPlan.displayConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix);
+							QueryPlan.displayConditionedTable(from_table_names.get(0), schema_manager, mem, tokens_postfix);
 						}
 					} else {
 						declareInvalidStatement();
@@ -200,22 +200,22 @@ public class StatementInterpreter {
 				} else {
 					if (need_order) {
 						if (!need_projection && !need_distinct) {
-							LogicalPlan.displayOrderTable(from_table_names.get(0), schema_manager, mem, order_attr_name);	
+							QueryPlan.displayOrderTable(from_table_names.get(0), schema_manager, mem, order_attr_name);	
 						} else {
 							declareInvalidStatement();
 						}					
 					} else {
 						if (need_distinct) {
 							if (need_projection) {
-								LogicalPlan.projectDistinctTable(from_table_names.get(0), schema_manager, mem, attr_proj_names);
+								QueryPlan.projectDistinctTable(from_table_names.get(0), schema_manager, mem, attr_proj_names);
 							} else {
-								LogicalPlan.displayDistinctTable(from_table_names.get(0), schema_manager, mem);
+								QueryPlan.displayDistinctTable(from_table_names.get(0), schema_manager, mem);
 							}
 						} else {
 							if (need_projection) {
-								LogicalPlan.projectTable(from_table_names.get(0), schema_manager, mem, attr_proj_names);
+								QueryPlan.projectTable(from_table_names.get(0), schema_manager, mem, attr_proj_names);
 							} else {
-								LogicalPlan.displayTable(from_table_names.get(0), schema_manager, mem);
+								QueryPlan.displayTable(from_table_names.get(0), schema_manager, mem);
 							}
 						}
 					}
@@ -226,21 +226,21 @@ public class StatementInterpreter {
 					if (need_distinct) {
 						if (need_projection) {
 							if (need_order) {
-								LogicalPlan.projectConditionedDistinctOrderJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names, order_attr_name);
+								QueryPlan.projectConditionedDistinctOrderJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names, order_attr_name);
 							} else {
-								LogicalPlan.projectConditionedDistinctJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
+								QueryPlan.projectConditionedDistinctJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
 							}
 						} else {
 							declareInvalidStatement();
 						}
 					} else {
 						if (need_projection) {
-							LogicalPlan.projectConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
+							QueryPlan.projectConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix, attr_proj_names);
 						} else {
 							if (need_order) {
-								LogicalPlan.displayConditionedOrderJoinTables(from_table_names, schema_manager, mem, tokens_postfix, order_attr_name);
+								QueryPlan.displayConditionedOrderJoinTables(from_table_names, schema_manager, mem, tokens_postfix, order_attr_name);
 							} else {
-								LogicalPlan.displayConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix);
+								QueryPlan.displayConditionedJoinTables(from_table_names, schema_manager, mem, tokens_postfix);
 							}
 						}
 					}
@@ -251,7 +251,7 @@ public class StatementInterpreter {
 						if (need_projection) {
 							declareInvalidStatement();
 						} else {
-							LogicalPlan.displayJoinTables(from_table_names, schema_manager, mem);
+							QueryPlan.displayJoinTables(from_table_names, schema_manager, mem);
 						}
 					}
 				}

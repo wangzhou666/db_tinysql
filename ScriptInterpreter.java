@@ -15,6 +15,7 @@ public class ScriptInterpreter {
 		SchemaManager schema_manager = new SchemaManager(mem, disk);
 
 		if (args.length == 0) {
+			System.out.println("Legal commands:\n\trun statement: <Tiny-SQL statement>\n\trun script: run <filename>\n\tquit program: quit");
 			String tmp_statement;
 			Console tmp_console;
 			String[] tokens;

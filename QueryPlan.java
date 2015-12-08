@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.Stack;
 
-public class LogicalPlan {
+public class QueryPlan {
 
 	public static void createTable(String relation_name, ArrayList<String> field_names, 
 		ArrayList<FieldType> field_types, SchemaManager schema_manager) {
