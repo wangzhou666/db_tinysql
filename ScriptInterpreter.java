@@ -17,25 +17,31 @@ public class ScriptInterpreter {
 		if (args.length == 0) {
 			String tmp_statement;
 			Console tmp_console;
+			String[] tokens;
 			while (true){
 				tmp_console = System.console();
 				tmp_statement = tmp_console.readLine();
+				tokens = tmp_statement.split(" ");
 				if (tmp_statement.equals("quit")) {
 					break;
+				} else if (tokens[0].equals("run")) {
+					runScript(tokens[1], mem, disk, schema_manager);
+				} else if (tmp_statement == "") {
+					continue;
 				}
 				StatementInterpreter.executeStmt(tmp_statement, mem, disk, schema_manager);
 			}
 		} else {
-			runScript(args, mem, disk, schema_manager);
+			runScript(args[0], mem, disk, schema_manager);
 		}
 	}
 
-	private static void runScript(String[] args, MainMemory mem, Disk disk, SchemaManager schema_manager) {		
+	private static void runScript(String args, MainMemory mem, Disk disk, SchemaManager schema_manager) {		
 		
 		try {
 			FileWriter performance_file_writer = new FileWriter("out_performance.txt");		
 			try {
-				String fileName = args[0];
+				String fileName = args;
 				File file = new File(fileName);
 				FileReader fileReader = new FileReader(file);
 				BufferedReader bufferedReader = new BufferedReader(fileReader);
