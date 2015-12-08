@@ -3,15 +3,34 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Console;
 import storageManager.*;
 
 public class ScriptInterpreter {
 
 	public static void main(String[] args) {
-		
+
 		MainMemory mem = new MainMemory();
 		Disk disk = new Disk();
 		SchemaManager schema_manager = new SchemaManager(mem, disk);
+
+		if (args.length == 0) {
+			String tmp_statement;
+			Console tmp_console;
+			while (true){
+				tmp_console = System.console();
+				tmp_statement = tmp_console.readLine();
+				if (tmp_statement.equals("quit")) {
+					break;
+				}
+				StatementInterpreter.executeStmt(tmp_statement, mem, disk, schema_manager);
+			}
+		} else {
+			runScript(args, mem, disk, schema_manager);
+		}
+	}
+
+	private static void runScript(String[] args, MainMemory mem, Disk disk, SchemaManager schema_manager) {		
 		
 		try {
 			FileWriter performance_file_writer = new FileWriter("out_performance.txt");		
@@ -41,6 +60,6 @@ public class ScriptInterpreter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+		System.out.println("finished!");
 	}
 }

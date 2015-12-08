@@ -7,4 +7,10 @@ ScriptInterpreter: ScriptInterpreter.java StatementInterpreter.java LogicalPlan.
 	javac ScriptInterpreter.java StatementInterpreter.java LogicalPlan.java ShuntingYard.java
 
 clean: 
-	rm storageManager/*.class *.class
+	rm storageManager/*.class *.class out_performance.txt
+
+run-script: ScriptInterpreter.class *.txt
+	java ScriptInterpreter TinySQL_linux.txt
+
+run: ScriptInterpreter.class
+	java ScriptInterpreter
